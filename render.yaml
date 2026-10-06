@@ -28,6 +28,3 @@ services:
         sync: false
       - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
-      # Optional: enables admin PDF-menu AI import. Site works without it.
-      - key: LOVABLE_API_KEY
-        sync: false

@@ -1,7 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { FileUp, ImagePlus, LogOut, Loader2, Trash2, Plus, Save, Pencil, X } from "lucide-react";
 import type { Session } from "@supabase/supabase-js";
@@ -11,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { menuQuery, settingsQuery, galleryQuery } from "@/lib/data";
-import { parseMenuPdf } from "@/lib/menu.functions";
+import { countTextChars, extractPdfLines, parseMenuLines } from "@/lib/menu-parse";
 import { StaffSection } from "@/components/StaffSection";
 import { rupee } from "@/lib/dhaba";
 import type { MenuItem } from "@/lib/data";
@@ -259,18 +258,8 @@ async function prepareLogoImage(file: File) {
 }
 
 async function extractPdfText(file: File) {
-  const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
-  const workerUrl = (await import("pdfjs-dist/legacy/build/pdf.worker.min.mjs?url")).default;
-  pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
-  const document = await pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()) })
-    .promise;
-  const pages: string[] = [];
-  for (let pageNumber = 1; pageNumber <= document.numPages; pageNumber += 1) {
-    const page = await document.getPage(pageNumber);
-    const content = await page.getTextContent();
-    pages.push(content.items.map((item) => ("str" in item ? item.str : "")).join(" "));
-  }
-  return pages.join("\n").replace(/\s+/g, " ").trim().slice(0, 250_000);
+  const pages = await extractPdfLines(file);
+  return { pages, chars: countTextChars(pages) };
 }
 
 function Panel({ userId, email }: { userId: string; email: string }) {
@@ -288,7 +277,6 @@ function Panel({ userId, email }: { userId: string; email: string }) {
   const settings = useQuery(settingsQuery);
   const menu = useQuery(menuQuery);
   const gallery = useQuery(galleryQuery);
-  const parse = useServerFn(parseMenuPdf);
 
   const [phone, setPhone] = useState("");
   const [wa, setWa] = useState("");
@@ -534,32 +522,28 @@ function Panel({ userId, email }: { userId: string; email: string }) {
       toast.error("PDF must be under 100 MB.");
       return;
     }
+    // Fully local: read + organise on this device. Nothing is uploaded anywhere.
     setParsing(true);
     setParseStage("Reading text from PDF…");
-    const storagePath = `menu-uploads/${userId}/${crypto.randomUUID()}-${file.name.replace(/[^a-zA-Z0-9._-]+/g, "-")}`;
     try {
-      const { error: uploadError } = await supabase.storage
-        .from("site-media")
-        .upload(storagePath, file, { contentType: "application/pdf" });
-      if (uploadError) throw uploadError;
-      let extractedText = "";
-      try {
-        extractedText = await extractPdfText(file);
-      } catch {
-        /* scanned menus use document reading below */
+      const { pages, chars } = await extractPdfText(file);
+      if (chars < 80) {
+        throw new Error(
+          "This PDF has no readable text — it looks like a scanned photo. Export it as a searchable PDF and try again.",
+        );
       }
-      setParseStage(
-        extractedText.length >= 80 ? "Organizing items and prices…" : "Reading scanned menu pages…",
-      );
-      const res = await parse({
-        data: { storagePath, filename: file.name, extractedText: extractedText || undefined },
-      });
-      setDraft(res.items);
-      toast.success(`Found ${res.items.length} items — review and publish.`);
+      setParseStage("Organising items and prices…");
+      // Let the UI paint the stage before the (fast) parse.
+      await new Promise((r) => setTimeout(r, 30));
+      const found = parseMenuLines(pages);
+      if (found.length === 0) {
+        throw new Error("Could not find any dishes with prices in this PDF.");
+      }
+      setDraft(found.map((i) => ({ ...i, image_url: null as string | null })));
+      toast.success(`Found ${found.length} items — review and publish.`);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed to read PDF");
     } finally {
-      await supabase.storage.from("site-media").remove([storagePath]);
       setParsing(false);
       setParseStage("");
     }
@@ -996,8 +980,8 @@ function Panel({ userId, email }: { userId: string; email: string }) {
       <section className="space-y-3 rounded-2xl border border-border bg-card p-5">
         <h2 className="text-xl">Upload menu PDF</h2>
         <p className="text-sm text-muted-foreground">
-          Upload a PDF up to 100 MB. We read every item and price automatically, then you review
-          before publishing.
+          Upload a PDF up to 100 MB. Items and prices are read instantly on this device — nothing is
+          uploaded or sent anywhere — then you review before publishing.
         </p>
         <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-dashed border-primary/50 p-6 text-primary hover:bg-primary/5">
           {parsing ? (
