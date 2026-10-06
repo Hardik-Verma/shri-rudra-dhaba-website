@@ -40,7 +40,7 @@ function GalleryPage() {
             <p className="mt-3 max-w-2xl text-muted-foreground">
               {gallery.length > 0
                 ? `${gallery.length} photos from the dhaba — managed by the owner.`
-                : "Fresh photos are on the way. The owner can add them anytime from the Owner Panel."}
+                : "Fresh photos are on the way. The owner can add them anytime from the Admin Panel."}
             </p>
           </div>
         </section>

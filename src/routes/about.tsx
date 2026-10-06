@@ -118,7 +118,7 @@ function AboutPage() {
                 <div className="text-center">
                   <UtensilsCrossed className="mx-auto size-12 text-primary" />
                   <p className="mt-3 text-sm text-muted-foreground">
-                    Dining photos can be added from the Owner Panel.
+                    Dining photos can be added from the Admin Panel.
                   </p>
                 </div>
               </div>

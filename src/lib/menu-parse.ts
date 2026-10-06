@@ -145,7 +145,7 @@ const CATEGORY_KEYWORDS: Array<[RegExp, string]> = [
   [/\b(combos?|thali|platter|meals?)\b/i, "Combos"],
 ];
 
-const ALL_CAPS_HEADER_RE = /^[A-Z][A-Z\s&'/\-]{2,38}$/;
+const ALL_CAPS_HEADER_RE = /^[A-Z][A-Z\s&'/-]{2,38}$/;
 
 function toTitleCase(s: string): string {
   return s
@@ -180,7 +180,7 @@ function detectCategory(line: string): string | null {
 
 function cleanName(raw: string): string {
   return raw
-    .replace(/^[•\-*>#(\[]*(\d{1,3}[.)\]]?\s*)?/, "")
+    .replace(/^[•\-*>#([]*(\d{1,3}[.)\]]?\s*)?/, "")
     .replace(/\.(\s*\.)+/g, " ")
     .replace(/\s+/g, " ")
     .replace(/\b\d+\s*(pcs?|pieces?)\b\s*$/i, "")

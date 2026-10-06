@@ -1,6 +1,7 @@
 # Professional restaurant site, editable media, and richer pages
 
 ## What will change
+
 - Keep the compile fixes already applied and preserve the strict dine-in ordering flow.
 - Add separate **About**, **Gallery**, and **Visit** pages, using the reference site only for page ideas—not its business details or copy.
 - Expand the shared navigation and footer so every public page is easy to reach on mobile, desktop, and large displays.
@@ -10,6 +11,7 @@
 - Keep every menu item editable, including its food image, description, category, price, diet type, and availability.
 
 ## Technical details
+
 - Extend site settings with homepage video and About-page copy/media fields, using safe defaults for existing installations.
 - Add an admin-managed gallery table with public reads, authenticated admin-only writes, explicit grants, and row-level access rules.
 - Store uploaded public images/videos in the existing media bucket under dedicated folders; allow public viewing while keeping admin-only uploads and deletes.
@@ -17,6 +19,7 @@
 - Add unique title, description, Open Graph title/description, `og:type`, and Twitter card metadata to every public route.
 
 ## Verification
+
 - Confirm the current compile errors are gone.
 - Test navigation, banner image/video selection, gallery management, and menu-item editing.
 - Check Home, Menu, About, Gallery, Visit, and Admin on phone, desktop, and TV-sized layouts with no overflow or runtime errors.

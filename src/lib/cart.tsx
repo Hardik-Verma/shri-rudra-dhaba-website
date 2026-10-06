@@ -46,14 +46,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
           );
         }
       }
-    } catch {}
+    } catch {
+      // Corrupt cart data — start fresh.
+    }
     setHydrated(true);
   }, []);
   useEffect(() => {
     if (!hydrated) return;
     try {
       localStorage.setItem(KEY, JSON.stringify(lines));
-    } catch {}
+    } catch {
+      // Storage full or unavailable — cart just won't persist.
+    }
   }, [lines, hydrated]);
 
   const value = useMemo<Ctx>(() => {

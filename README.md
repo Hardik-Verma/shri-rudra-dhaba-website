@@ -1,25 +1,41 @@
-# Welcome to your Lovable project
+# Shri Rudra Dhaba — Website
 
-This project was built with [Lovable](https://lovable.dev).
+Highway restaurant site (TanStack Start + React + Tailwind) with a live menu, WhatsApp
+dine-in ordering, and an Admin Panel backed by Supabase.
 
-## Build with Lovable
+## Local development
 
-Open your project in the [Lovable editor](https://lovable.dev) and keep building.
-
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: connect the project to GitHub and every change made in Lovable is committed straight to your repository.
-- **Full ownership**: this code is yours. Push to your repository and your changes sync back into Lovable, ready for your next prompt.
-
-## Development
-
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
+You need Node.js 22 and npm.
 
 ```sh
-git clone <this-repository-url>
-cd <repository-name>
-npm i
-npm run dev
+git clone https://github.com/Hardik-Verma/shri-rudra-dhaba-website
+cd shri-rudra-dhaba-website
+cp .env.example .env   # then fill in your Supabase keys
+npm install
+npm run dev            # opens on the first free port from 8080
 ```
+
+| Script            | What it does                                      |
+| ----------------- | ------------------------------------------------- |
+| `npm run dev`     | Local dev server with hot reload                  |
+| `npm run build`   | Production build (`.output/`, Cloudflare default) |
+| `npm run preview` | Serve the production build locally                |
+| `npm run lint`    | ESLint (must be clean)                            |
+| `npm run format`  | Prettier write                                    |
+
+On Render the build runs with `NITRO_PRESET=node-server` (see `render.yaml`) so the
+same output serves as a plain Node server.
+
+## Admin access
+
+- Open `/admin` and sign in. There is **no public signup** — accounts are created
+  by the owner inside StaffSection, so no confirmation email is ever needed.
+- Supabase Dashboard → Authentication → Configuration → turn OFF
+  **"Allow new users to sign up"** so nobody can register via the API either.
+- Email confirmation: turn OFF **"Confirm email"** under the Email provider
+  (staff accounts are created pre-confirmed). If you keep it on, set **Site URL**
+  to your live domain and add `https://<domain>/**` under Redirect URLs,
+  otherwise confirmation links point at localhost.
 
 ## Built with
 
@@ -27,3 +43,4 @@ npm run dev
 - TypeScript
 - React
 - Tailwind CSS
+- Supabase

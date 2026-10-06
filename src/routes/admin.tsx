@@ -18,12 +18,12 @@ import type { MenuItem } from "@/lib/data";
 export const Route = createFileRoute("/admin")({
   head: () => ({
     meta: [
-      { title: "Owner Panel – Shri Rudra Dhaba" },
+      { title: "Admin Panel – Shri Rudra Dhaba" },
       {
         name: "description",
-        content: "Owner panel to manage menu, phone and WhatsApp for Shri Rudra Dhaba.",
+        content: "Admin panel to manage menu, phone and WhatsApp for Shri Rudra Dhaba.",
       },
-      { property: "og:title", content: "Owner Panel – Shri Rudra Dhaba" },
+      { property: "og:title", content: "Admin Panel – Shri Rudra Dhaba" },
       { property: "og:description", content: "Manage the dhaba menu and contact settings." },
       { name: "robots", content: "noindex, nofollow" },
     ],
@@ -57,70 +57,103 @@ function Center({ children }: { children: React.ReactNode }) {
 }
 
 function Login() {
-  const [mode, setMode] = useState<"in" | "up">("in");
   const [email, setEmail] = useState("");
   const [pw, setPw] = useState("");
   const [busy, setBusy] = useState(false);
+  const [failed, setFailed] = useState(0);
+  const [lockedUntil, setLockedUntil] = useState(0);
+  const [showResend, setShowResend] = useState(false);
+  const locked = Date.now() < lockedUntil;
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (locked || busy) return;
     setBusy(true);
-    const { error } =
-      mode === "in"
-        ? await supabase.auth.signInWithPassword({ email, password: pw })
-        : await supabase.auth.signUp({
-            email,
-            password: pw,
-            options: { emailRedirectTo: `${window.location.origin}/admin` },
-          });
+    setShowResend(false);
+    const { error } = await supabase.auth.signInWithPassword({ email, password: pw });
     setBusy(false);
     if (error) {
-      toast.error(error.message);
+      if (/confirm|verif/i.test(error.message)) setShowResend(true);
+      const n = failed + 1;
+      setFailed(n);
+      if (n >= 5) {
+        setLockedUntil(Date.now() + 30_000);
+        setFailed(0);
+        toast.error("Too many attempts — wait 30 seconds and try again.");
+      } else {
+        toast.error(error.message);
+      }
       return;
     }
-    if (mode === "up") toast.success("Check your email to confirm your account, then sign in.");
   }
+
+  async function resend() {
+    if (!email) {
+      toast.error("Enter your email first.");
+      return;
+    }
+    setBusy(true);
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email,
+      options: { emailRedirectTo: `${window.location.origin}/admin` },
+    });
+    setBusy(false);
+    if (error) toast.error(error.message);
+    else toast.success("Confirmation email sent — check your inbox and spam folder.");
+  }
+
   return (
     <Center>
       <form
         onSubmit={submit}
         className="w-full max-w-sm space-y-4 rounded-2xl border border-border bg-card p-6"
       >
-        <h1 className="text-3xl">Owner Panel</h1>
+        <h1 className="text-3xl">Admin Panel</h1>
         <p className="text-sm text-muted-foreground">
-          Only the owner and staff added by the owner can access this panel.
+          Sign in with your owner or staff account. New accounts can only be created by the owner
+          from inside this panel.
         </p>
         <div>
-          <Label>Email</Label>
+          <Label htmlFor="admin-email">Email</Label>
           <Input
+            id="admin-email"
             type="email"
             required
+            autoComplete="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="mt-1.5"
           />
         </div>
         <div>
-          <Label>Password</Label>
+          <Label htmlFor="admin-password">Password</Label>
           <Input
+            id="admin-password"
             type="password"
             required
-            minLength={6}
+            autoComplete="current-password"
             value={pw}
             onChange={(e) => setPw(e.target.value)}
             className="mt-1.5"
           />
         </div>
-        <Button variant="hero" size="lg" className="w-full" disabled={busy}>
+        <Button variant="hero" size="lg" className="w-full" disabled={busy || locked}>
           {busy && <Loader2 className="animate-spin" />}
-          {mode === "in" ? "Sign in" : "Create account"}
+          {locked ? "Locked — try again shortly" : "Sign in"}
         </Button>
-        <button
-          type="button"
-          className="w-full text-sm text-primary"
-          onClick={() => setMode(mode === "in" ? "up" : "in")}
-        >
-          {mode === "in" ? "First time? Create your account" : "Have an account? Sign in"}
-        </button>
+        {showResend && (
+          <Button
+            type="button"
+            variant="outline"
+            size="lg"
+            className="w-full"
+            disabled={busy}
+            onClick={resend}
+          >
+            Resend confirmation email
+          </Button>
+        )}
         <Link to="/" className="block text-center text-xs text-muted-foreground">
           ← Back to site
         </Link>
@@ -337,7 +370,7 @@ function Panel({ userId, email }: { userId: string; email: string }) {
     return (
       <Center>
         <div className="text-center">
-          <p>This account is not the dhaba owner.</p>
+          <p>This account does not have admin access.</p>
           <Button className="mt-4" variant="outline" onClick={() => supabase.auth.signOut()}>
             Sign out
           </Button>
@@ -619,7 +652,7 @@ function Panel({ userId, email }: { userId: string; email: string }) {
     <main className="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 lg:px-10">
       <header className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl">Owner Panel</h1>
+          <h1 className="text-3xl">Admin Panel</h1>
           <p className="text-xs text-muted-foreground">{email}</p>
         </div>
         <div className="flex gap-2">
@@ -1070,7 +1103,7 @@ function Panel({ userId, email }: { userId: string; email: string }) {
                 </div>
               ))}
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-col gap-2 sm:flex-row">
               <Button variant="hero" onClick={publishDraft}>
                 Replace menu with these
               </Button>
@@ -1084,7 +1117,7 @@ function Panel({ userId, email }: { userId: string; email: string }) {
 
       <section className="space-y-3 rounded-2xl border border-border bg-card p-5">
         <h2 className="text-xl">Current menu ({menu.data?.length ?? 0})</h2>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           <Input
             placeholder="Item name"
             value={newItem.name}
@@ -1132,14 +1165,14 @@ function Panel({ userId, email }: { userId: string; email: string }) {
               }}
             />
           </label>
-          <Button variant="secondary" onClick={addItem} className="col-span-2">
+          <Button variant="secondary" onClick={addItem} className="sm:col-span-2">
             <Plus /> Add item
           </Button>
           {newItemImage && (
             <img
               src={newItemImage}
               alt="New dish preview"
-              className="col-span-2 h-32 w-full rounded-md object-cover"
+              className="h-32 w-full rounded-md object-cover sm:col-span-2"
             />
           )}
         </div>
@@ -1286,7 +1319,7 @@ function Panel({ userId, email }: { userId: string; email: string }) {
               />{" "}
               Available today
             </label>
-            <div className="flex gap-2">
+            <div className="flex flex-col gap-2 sm:flex-row">
               <Button variant="hero" onClick={saveEditedItem}>
                 <Save /> Save item
               </Button>
