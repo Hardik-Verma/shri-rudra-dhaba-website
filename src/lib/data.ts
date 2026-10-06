@@ -97,19 +97,41 @@ export const settingsQuery = queryOptions({
         .maybeSingle();
       if (error) throw error;
       const settings = data ?? DEFAULT_SETTINGS;
-      let banner_video_url: string | null = publicMediaUrl(settings.banner_video_path);
-      if (!banner_video_url && settings.banner_video_path) {
+      // Never render blank text: an empty string saved in the DB falls back
+      // to the default copy so headings and buttons can't disappear.
+      const text = (value: unknown, fallback: string) => {
+        const trimmed = typeof value === "string" ? value.trim() : "";
+        return trimmed.length > 0 ? trimmed : fallback;
+      };
+      const withCopy = {
+        ...settings,
+        banner_eyebrow: text(settings.banner_eyebrow, DEFAULT_SETTINGS.banner_eyebrow),
+        banner_heading: text(settings.banner_heading, DEFAULT_SETTINGS.banner_heading),
+        banner_text: text(settings.banner_text, DEFAULT_SETTINGS.banner_text),
+        banner_primary_button: text(
+          settings.banner_primary_button,
+          DEFAULT_SETTINGS.banner_primary_button,
+        ),
+        banner_secondary_button: text(
+          settings.banner_secondary_button,
+          DEFAULT_SETTINGS.banner_secondary_button,
+        ),
+        about_heading: text(settings.about_heading, DEFAULT_SETTINGS.about_heading),
+        about_text: text(settings.about_text, DEFAULT_SETTINGS.about_text),
+      };
+      let banner_video_url: string | null = publicMediaUrl(withCopy.banner_video_path);
+      if (!banner_video_url && withCopy.banner_video_path) {
         // Legacy / non-public paths: fall back to a short-lived signed URL.
         try {
           const { data: signed } = await supabase.storage
             .from("site-media")
-            .createSignedUrl(settings.banner_video_path, 3600);
+            .createSignedUrl(withCopy.banner_video_path, 3600);
           banner_video_url = signed?.signedUrl ?? null;
         } catch {
           banner_video_url = null;
         }
       }
-      return { ...settings, banner_video_url };
+      return { ...withCopy, banner_video_url };
     } catch (e) {
       console.error("settingsQuery failed", e);
       return { ...DEFAULT_SETTINGS, banner_video_url: null as string | null };

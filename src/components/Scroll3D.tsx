@@ -40,7 +40,6 @@ export function Hero3D({
   const scale = useTransform(p, [0, 1], [1.05, 1.14]);
   const imgY = useTransform(p, [0, 1], ["0%", "10%"]);
   const textY = useTransform(p, [0, 1], [0, -48]);
-  const opacity = useTransform(p, [0, 0.75], [1, 0]);
 
   return (
     <section
@@ -79,10 +78,9 @@ export function Hero3D({
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-        style={{ y: textY, opacity }}
         className="mx-auto flex min-h-[calc(640px-4rem)] w-full max-w-6xl flex-col justify-end px-4 pb-14 pt-14 text-hero-foreground sm:min-h-[calc(640px-5rem)] sm:px-6 lg:min-h-[calc(700px-5rem)] lg:px-8 lg:pb-20"
       >
-        {children}
+        <motion.div style={{ y: textY }}>{children}</motion.div>
       </motion.div>
     </section>
   );
