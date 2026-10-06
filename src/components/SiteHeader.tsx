@@ -1,8 +1,10 @@
 import { Link } from "@tanstack/react-router";
 import { MapPin, Menu, X } from "lucide-react";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { settingsQuery } from "@/lib/data";
 import { MAPS_URL } from "@/lib/dhaba";
 
 const NAV = [
@@ -15,14 +17,24 @@ const NAV = [
 
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
+  const { data: settings } = useQuery(settingsQuery);
+  const logo = settings?.logo_image_url ?? null;
 
   return (
     <header className="fixed inset-x-0 top-0 z-40 border-b border-border bg-background/95 backdrop-blur">
       <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between gap-3 px-4 sm:h-[72px] sm:px-6 lg:px-8">
         <Link to="/" className="flex min-w-0 items-center gap-2.5" onClick={() => setOpen(false)}>
-          <span className="grid size-9 shrink-0 place-items-center rounded-full bg-primary text-lg text-primary-foreground">
-            रु
-          </span>
+          {logo ? (
+            <img
+              src={logo}
+              alt="Shri Rudra Dhaba logo"
+              className="size-9 shrink-0 rounded-full border border-border object-cover"
+            />
+          ) : (
+            <span className="grid size-9 shrink-0 place-items-center rounded-full bg-primary text-lg text-primary-foreground">
+              रु
+            </span>
+          )}
           <span className="min-w-0 leading-tight">
             <span className="block truncate text-[17px] font-bold">Shri Rudra Dhaba</span>
             <span className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">

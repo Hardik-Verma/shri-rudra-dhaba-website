@@ -226,6 +226,38 @@ async function prepareGalleryImage(file: File) {
   return canvas.toDataURL("image/jpeg", 0.78);
 }
 
+async function prepareLogoImage(file: File) {
+  if (!file.type.match(/^image\/(jpeg|png|webp)$/))
+    throw new Error("Choose a JPG, PNG or WebP image.");
+  if (file.size > 8 * 1024 * 1024) throw new Error("Logo must be under 8 MB.");
+  const source = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () =>
+      typeof reader.result === "string"
+        ? resolve(reader.result)
+        : reject(new Error("Could not read this image."));
+    reader.onerror = () => reject(new Error("Could not read this image."));
+    reader.readAsDataURL(file);
+  });
+  const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const next = new Image();
+    next.onload = () => resolve(next);
+    next.onerror = () => reject(new Error("Could not open this image."));
+    next.src = source;
+  });
+  const scale = Math.min(1, 512 / Math.max(image.width, image.height));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(image.width * scale));
+  canvas.height = Math.max(1, Math.round(image.height * scale));
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("Could not prepare this image.");
+  context.drawImage(image, 0, 0, canvas.width, canvas.height);
+  // Keep PNG for transparency, otherwise compress to JPEG.
+  return file.type === "image/png"
+    ? canvas.toDataURL("image/png")
+    : canvas.toDataURL("image/jpeg", 0.85);
+}
+
 async function extractPdfText(file: File) {
   const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
   const workerUrl = (await import("pdfjs-dist/legacy/build/pdf.worker.min.mjs?url")).default;
@@ -271,6 +303,7 @@ function Panel({ userId, email }: { userId: string; email: string }) {
   const [aboutHeading, setAboutHeading] = useState("");
   const [aboutText, setAboutText] = useState("");
   const [aboutImage, setAboutImage] = useState<string | null>(null);
+  const [logoImage, setLogoImage] = useState<string | null>(null);
   const [preparingImage, setPreparingImage] = useState(false);
   const [uploadingVideo, setUploadingVideo] = useState(false);
   useEffect(() => {
@@ -288,6 +321,7 @@ function Panel({ userId, email }: { userId: string; email: string }) {
     setAboutHeading(settings.data.about_heading ?? "");
     setAboutText(settings.data.about_text ?? "");
     setAboutImage(settings.data.about_image_url ?? null);
+    setLogoImage(settings.data.logo_image_url ?? null);
   }, [settings.data]);
 
   const [parsing, setParsing] = useState(false);
@@ -375,6 +409,19 @@ function Panel({ userId, email }: { userId: string; email: string }) {
       return;
     }
     toast.success("Homepage banner saved");
+    refresh();
+  }
+
+  async function saveLogo() {
+    const { error } = await supabase
+      .from("site_settings")
+      .update({ logo_image_url: logoImage, updated_at: new Date().toISOString() })
+      .eq("id", 1);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Logo saved");
     refresh();
   }
 
@@ -734,6 +781,63 @@ function Panel({ userId, email }: { userId: string; email: string }) {
         <Button variant="hero" onClick={saveBanner} disabled={preparingImage || uploadingVideo}>
           <Save /> Save banner
         </Button>
+      </section>
+
+      <section className="space-y-4 rounded-2xl border border-border bg-card p-5">
+        <div>
+          <h2 className="text-xl">Logo</h2>
+          <p className="text-sm text-muted-foreground">
+            Shown in the site header. PNG keeps transparency. Remove it to go back to the monogram.
+          </p>
+        </div>
+        {logoImage && (
+          <img
+            src={logoImage}
+            alt="Restaurant logo"
+            className="size-24 rounded-full border border-border object-cover"
+          />
+        )}
+        <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-dashed border-primary/50 p-5 text-primary hover:bg-primary/5">
+          {preparingImage ? (
+            <>
+              <Loader2 className="animate-spin" /> Preparing…
+            </>
+          ) : (
+            <>
+              <ImagePlus /> {logoImage ? "Replace logo" : "Choose logo"}
+            </>
+          )}
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            className="hidden"
+            disabled={preparingImage}
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              setPreparingImage(true);
+              prepareLogoImage(file)
+                .then(setLogoImage)
+                .catch((error) =>
+                  toast.error(
+                    error instanceof Error ? error.message : "Could not prepare this image.",
+                  ),
+                )
+                .finally(() => setPreparingImage(false));
+              e.target.value = "";
+            }}
+          />
+        </label>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="hero" onClick={saveLogo} disabled={preparingImage}>
+            <Save /> Save logo
+          </Button>
+          {logoImage && (
+            <Button variant="ghost" size="sm" onClick={() => setLogoImage(null)}>
+              <Trash2 /> Remove logo
+            </Button>
+          )}
+        </div>
       </section>
 
       <section className="space-y-4 rounded-2xl border border-border bg-card p-5">

@@ -60,6 +60,7 @@ const DEFAULT_SETTINGS = {
   banner_primary_button: "Navigate",
   banner_secondary_button: "Call Dhaba",
   banner_video_path: null as string | null,
+  logo_image_url: null as string | null,
   about_heading: "A highway stop made for a proper pause",
   about_text:
     "Shri Rudra Murthal Walo Ka Dhaba welcomes diners on NH-734 near Bijnor. Visit for a dine-in break, browse the live menu, and order from your table.",
