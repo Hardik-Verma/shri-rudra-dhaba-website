@@ -1,0 +1,33 @@
+services:
+  - type: web
+    name: shri-rudra-dhaba
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build
+    # Nitro (TanStack Start) server output. NITRO_PRESET env below switches
+    # the build from Cloudflare workers to a plain Node server for Render.
+    startCommand: node .output/server/index.mjs
+    autoDeploy: true
+    healthCheckPath: /
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NITRO_PRESET
+        value: node-server
+      - key: PORT
+        value: "10000"
+      # Baked into the client bundle at build time (Render sets these BEFORE build).
+      - key: VITE_SUPABASE_URL
+        sync: false
+      - key: VITE_SUPABASE_PUBLISHABLE_KEY
+        sync: false
+      # Read by the server at runtime (SSR + server functions).
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_PUBLISHABLE_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      # Optional: enables admin PDF-menu AI import. Site works without it.
+      - key: LOVABLE_API_KEY
+        sync: false

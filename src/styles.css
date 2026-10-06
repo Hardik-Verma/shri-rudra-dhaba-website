@@ -1,0 +1,209 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-display:
+    ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-veg: var(--veg);
+  --color-nonveg: var(--nonveg);
+  --color-whatsapp: var(--whatsapp);
+  --color-whatsapp-foreground: var(--whatsapp-foreground);
+  --color-hero-foreground: var(--hero-foreground);
+}
+
+:root {
+  --radius: 0.625rem;
+  --background: oklch(0.99 0.003 95);
+  --foreground: oklch(0.24 0.008 60);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.24 0.008 60);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.24 0.008 60);
+  --primary: oklch(0.55 0.16 48);
+  --primary-foreground: oklch(0.99 0.01 85);
+  --secondary: oklch(0.955 0.005 95);
+  --secondary-foreground: oklch(0.3 0.008 60);
+  --muted: oklch(0.955 0.005 95);
+  --muted-foreground: oklch(0.5 0.01 65);
+  --accent: oklch(0.94 0.006 95);
+  --accent-foreground: oklch(0.3 0.008 60);
+  --destructive: oklch(0.55 0.2 27);
+  --destructive-foreground: oklch(0.98 0 0);
+  --border: oklch(0.9 0.006 90);
+  --input: oklch(0.9 0.006 90);
+  --ring: oklch(0.55 0.16 48);
+  --veg: oklch(0.48 0.13 150);
+  --nonveg: oklch(0.55 0.18 30);
+  --whatsapp: oklch(0.5 0.14 152);
+  --whatsapp-foreground: oklch(0.98 0.005 90);
+  --gradient-hero-fade: linear-gradient(
+    180deg,
+    oklch(0.15 0.01 60 / 0.25) 0%,
+    oklch(0.15 0.01 60 / 0.6) 60%,
+    oklch(0.15 0.01 60 / 0.85) 100%
+  );
+  --hero-foreground: oklch(0.98 0.004 90);
+}
+
+.dark {
+  --background: oklch(0.2 0.006 60);
+  --foreground: oklch(0.93 0.005 90);
+  --card: oklch(0.24 0.007 60);
+  --card-foreground: oklch(0.93 0.005 90);
+  --popover: oklch(0.23 0.007 60);
+  --popover-foreground: oklch(0.93 0.005 90);
+  --primary: oklch(0.72 0.14 55);
+  --primary-foreground: oklch(0.22 0.02 50);
+  --secondary: oklch(0.28 0.008 60);
+  --secondary-foreground: oklch(0.93 0.005 90);
+  --muted: oklch(0.27 0.008 60);
+  --muted-foreground: oklch(0.7 0.01 80);
+  --accent: oklch(0.3 0.009 60);
+  --accent-foreground: oklch(0.93 0.005 90);
+  --destructive: oklch(0.6 0.2 27);
+  --destructive-foreground: oklch(0.98 0 0);
+  --border: oklch(0.32 0.009 60);
+  --input: oklch(0.32 0.009 60);
+  --ring: oklch(0.72 0.14 55);
+  --veg: oklch(0.66 0.14 152);
+  --nonveg: oklch(0.62 0.18 30);
+  --whatsapp: oklch(0.66 0.14 152);
+  --whatsapp-foreground: oklch(0.16 0.01 60);
+  --gradient-hero-fade: linear-gradient(
+    180deg,
+    oklch(0.15 0.008 60 / 0.25) 0%,
+    oklch(0.15 0.008 60 / 0.65) 60%,
+    oklch(0.15 0.008 60 / 0.9) 100%
+  );
+  --hero-foreground: oklch(0.98 0.004 90);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family:
+      ui-sans-serif,
+      system-ui,
+      -apple-system,
+      "Segoe UI",
+      Roboto,
+      Arial,
+      sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+  }
+  h1,
+  h2,
+  h3 {
+    font-family:
+      ui-sans-serif,
+      system-ui,
+      -apple-system,
+      "Segoe UI",
+      Roboto,
+      Arial,
+      sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    line-height: 1.2;
+  }
+  button,
+  a,
+  input,
+  textarea {
+    letter-spacing: 0;
+  }
+  ::selection {
+    background: var(--color-primary);
+    color: var(--color-primary-foreground);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      scroll-behavior: auto !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@utility bg-hero-fade {
+  background-image: var(--gradient-hero-fade);
+}
+
+/* Smooth animated underline for nav + inline links */
+@utility link-underline {
+  position: relative;
+  &::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: -3px;
+    height: 1.5px;
+    width: 100%;
+    background: currentColor;
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  &:hover::after {
+    transform: scaleX(1);
+  }
+  &[data-active="true"]::after {
+    transform: scaleX(1);
+  }
+}
+
+/* Persistent underline for the active nav link */
+@utility link-active {
+  &::after {
+    transform: scaleX(1);
+  }
+}
+
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}

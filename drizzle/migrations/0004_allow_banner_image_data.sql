@@ -1,0 +1,1 @@
+COMMENT ON COLUMN public.site_settings.banner_image_url IS 'Editable homepage banner image stored as a compressed data URL.';
