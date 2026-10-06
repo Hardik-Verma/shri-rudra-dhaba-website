@@ -8,11 +8,13 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { Button } from "@/components/ui/button";
 import { galleryQuery, menuQuery, settingsQuery } from "@/lib/data";
 import {
+  AREAS_SERVED,
   DHABA,
   FEATURES,
   MAPS_EMBED,
   MAPS_REVIEWS_URL,
   MAPS_URL,
+  SITE_URL,
   categoryMeta,
   describeItem,
   digitsOnly,
@@ -21,17 +23,23 @@ import {
 } from "@/lib/dhaba";
 import { useEffect, useState } from "react";
 
-const TITLE = "Shri Rudra Dhaba – Highway Restaurant near Bijnor, NH-734";
+const TITLE = "Shri Rudra Dhaba | Best Restaurant on NH-734 near Bijnor & Najibabad";
 const DESC =
-  "Visit Shri Rudra Murthal Walo Ka Dhaba on NH-734 near Bijnor. Dine-in daily from 6 AM to 11 PM. Browse the live menu and order from your table.";
+  "Shri Rudra Murthal Walo Ka Dhaba — a traveller-favourite restaurant on NH-734 between Bijnor and Najibabad. Parathas, tandoor, chai & lassi. Open daily 6 AM–11 PM. Rated 4.6 on Google.";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: TITLE },
       { name: "description", content: DESC },
+      {
+        name: "keywords",
+        content:
+          "Shri Rudra Dhaba, best restaurant Bijnor, best restaurant Najibabad, dhaba NH-734, Murthal paratha Bijnor, restaurants near me NH-734",
+      },
       { property: "og:title", content: TITLE },
       { property: "og:description", content: DESC },
+      { property: "og:url", content: `${SITE_URL}/` },
       { name: "twitter:title", content: TITLE },
       { name: "twitter:description", content: DESC },
       { name: "geo.region", content: "IN-UP" },
@@ -39,7 +47,7 @@ export const Route = createFileRoute("/")({
       { name: "geo.position", content: `${DHABA.lat};${DHABA.lng}` },
       { name: "ICBM", content: `${DHABA.lat}, ${DHABA.lng}` },
     ],
-    links: [{ rel: "canonical", href: "/" }],
+    links: [{ rel: "canonical", href: `${SITE_URL}/` }],
   }),
   loader: ({ context }) =>
     Promise.all([
@@ -141,6 +149,22 @@ function HomePage() {
                 <p className="mt-1.5 text-sm text-muted-foreground">{label}</p>
               </Reveal3D>
             ))}
+          </div>
+        </section>
+
+        <section aria-label="Areas served">
+          <div className="mx-auto w-full max-w-6xl px-4 py-10 text-center sm:px-6 lg:px-8">
+            <Reveal3D>
+              <p className="text-sm text-muted-foreground">
+                A favourite halt for travellers across{" "}
+                {AREAS_SERVED.map((a, i) => (
+                  <span key={a}>
+                    <span className="font-semibold text-foreground">{a}</span>
+                    {i < AREAS_SERVED.length - 1 ? " · " : ""}
+                  </span>
+                ))}
+              </p>
+            </Reveal3D>
           </div>
         </section>
 

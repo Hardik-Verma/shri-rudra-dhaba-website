@@ -14,7 +14,7 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { CartProvider } from "@/lib/cart";
 import { Toaster } from "@/components/ui/sonner";
-import { DHABA, MAPS_URL } from "@/lib/dhaba";
+import { DHABA, MAPS_REVIEWS_URL, MAPS_URL, SITE_URL } from "@/lib/dhaba";
 
 function NotFoundComponent() {
   return (
@@ -79,9 +79,21 @@ function ErrorComponent({ error, reset }: ErrorComponentProps) {
 const restaurantLd = {
   "@context": "https://schema.org",
   "@type": "Restaurant",
+  "@id": `${SITE_URL}/#restaurant`,
   name: DHABA.name,
+  alternateName: DHABA.shortName,
+  description:
+    "Murthal-style highway dhaba on NH-734 near Bijnor — parathas, tandoor breads, dals, rice plates, chai and lassi. Dine-in daily 6 AM to 11 PM.",
+  url: SITE_URL,
   foundingDate: "2025",
-  servesCuisine: ["North Indian", "Punjabi", "Murthal Parathas"],
+  servesCuisine: [
+    "North Indian",
+    "Punjabi",
+    "Mughlai",
+    "Chinese",
+    "South Indian",
+    "Murthal Parathas",
+  ],
   priceRange: "₹",
   address: {
     "@type": "PostalAddress",
@@ -93,6 +105,13 @@ const restaurantLd = {
   },
   geo: { "@type": "GeoCoordinates", latitude: DHABA.lat, longitude: DHABA.lng },
   hasMap: MAPS_URL,
+  sameAs: [MAPS_URL, MAPS_REVIEWS_URL],
+  hasMenu: `${SITE_URL}/menu`,
+  aggregateRating: {
+    "@type": "AggregateRating",
+    ratingValue: DHABA.rating,
+    reviewCount: DHABA.reviewCount,
+  },
   openingHoursSpecification: [
     {
       "@type": "OpeningHoursSpecification",
@@ -133,7 +152,11 @@ function RootShell({ children }: { children: ReactNode }) {
     <html lang="en-IN" suppressHydrationWarning>
       <head>
         <HeadContent />
-        <script dangerouslySetInnerHTML={{ __html: `(function(){try{var t=localStorage.getItem('rudra-theme');var d=t==='dark'||(!t&&matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.classList.toggle('dark',d);document.documentElement.style.colorScheme=d?'dark':'light'}catch(e){document.documentElement.classList.add('dark')}})();` }} />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('rudra-theme');var d=t==='dark'||(!t&&matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.classList.toggle('dark',d);document.documentElement.style.colorScheme=d?'dark':'light'}catch(e){document.documentElement.classList.add('dark')}})();`,
+          }}
+        />
       </head>
       <body>
         {children}

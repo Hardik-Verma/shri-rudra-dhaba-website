@@ -21,9 +21,16 @@ export const DHABA = {
   since: "2025",
 };
 
+// Canonical public URL of the site. If your Render URL differs, change it here
+// (sitemap, canonical tags and structured data all build on this).
+export const SITE_URL = "https://shri-rudra-dhaba.onrender.com";
+
 export const MAPS_URL = `https://www.google.com/maps/dir/?api=1&destination=${DHABA.lat},${DHABA.lng}`;
 export const MAPS_EMBED = `https://www.google.com/maps?q=${DHABA.lat},${DHABA.lng}&z=15&output=embed`;
 export const MAPS_REVIEWS_URL = `https://www.google.com/maps/search/?api=1&query=${DHABA.lat},${DHABA.lng}`;
+
+// Towns and the highway corridor this dhaba serves (NH-734 runs Bijnor ↔ Najibabad).
+export const AREAS_SERVED = ["Bijnor", "Najibabad", "Akbarabad", "NH-734 corridor"];
 
 export const DEFAULT_CATEGORIES = [
   "Parathas",
@@ -165,6 +172,10 @@ export const VISIT_FAQS = [
   {
     q: "How do I pay?",
     a: "Dine-in only — order from your table on WhatsApp and pay at the counter.",
+  },
+  {
+    q: "Searching for the best restaurant near me on NH-734?",
+    a: "If you're travelling on NH-734 between Bijnor and Najibabad, Shri Rudra Dhaba is a highly rated stop (4.6 on Google) for parathas, tandoor dishes, chai and lassi — open daily 6 AM–11 PM.",
   },
 ];
 

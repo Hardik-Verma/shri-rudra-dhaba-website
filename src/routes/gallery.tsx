@@ -5,10 +5,11 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { Button } from "@/components/ui/button";
 import { galleryQuery } from "@/lib/data";
+import { SITE_URL } from "@/lib/dhaba";
 
-const TITLE = "Gallery – Shri Rudra Dhaba";
+const TITLE = "Food Photos – Shri Rudra Dhaba, NH-734 Bijnor";
 const DESC =
-  "Photos of food, seating and the highway halt at Shri Rudra Dhaba on NH-734 near Bijnor.";
+  "Photos of parathas, tandoor dishes and the highway halt at Shri Rudra Dhaba on NH-734 near Bijnor & Najibabad.";
 
 export const Route = createFileRoute("/gallery")({
   head: () => ({
@@ -17,8 +18,9 @@ export const Route = createFileRoute("/gallery")({
       { name: "description", content: DESC },
       { property: "og:title", content: TITLE },
       { property: "og:description", content: DESC },
+      { property: "og:url", content: `${SITE_URL}/gallery` },
     ],
-    links: [{ rel: "canonical", href: "/gallery" }],
+    links: [{ rel: "canonical", href: `${SITE_URL}/gallery` }],
   }),
   loader: ({ context }) => context.queryClient.ensureQueryData(galleryQuery),
   component: GalleryPage,

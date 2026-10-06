@@ -5,11 +5,21 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { Button } from "@/components/ui/button";
 import { settingsQuery } from "@/lib/data";
-import { DHABA, ABOUT_FAQS, FEATURES, MAPS_REVIEWS_URL, MAPS_URL } from "@/lib/dhaba";
+import { DHABA, ABOUT_FAQS, FEATURES, MAPS_REVIEWS_URL, MAPS_URL, SITE_URL } from "@/lib/dhaba";
 
-const TITLE = "About Us – Shri Rudra Dhaba, NH-734 near Bijnor";
+const TITLE = "About Us – Shri Rudra Dhaba | Murthal-Style Restaurant, Bijnor";
 const DESC =
-  "About Shri Rudra Murthal Walo Ka Dhaba on NH-734 near Bijnor: Murthal-style food, family seating and dine-in ordering.";
+  "About Shri Rudra Murthal Walo Ka Dhaba on NH-734 near Bijnor & Najibabad: Murthal-style parathas, tandoor, family seating and WhatsApp dine-in ordering.";
+
+const faqLd = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: ABOUT_FAQS.map((f) => ({
+    "@type": "Question",
+    name: f.q,
+    acceptedAnswer: { "@type": "Answer", text: f.a },
+  })),
+};
 
 export const Route = createFileRoute("/about")({
   head: () => ({
@@ -18,8 +28,10 @@ export const Route = createFileRoute("/about")({
       { name: "description", content: DESC },
       { property: "og:title", content: TITLE },
       { property: "og:description", content: DESC },
+      { property: "og:url", content: `${SITE_URL}/about` },
     ],
-    links: [{ rel: "canonical", href: "/about" }],
+    links: [{ rel: "canonical", href: `${SITE_URL}/about` }],
+    scripts: [{ type: "application/ld+json", children: JSON.stringify(faqLd) }],
   }),
   loader: ({ context }) => context.queryClient.ensureQueryData(settingsQuery),
   component: AboutPage,

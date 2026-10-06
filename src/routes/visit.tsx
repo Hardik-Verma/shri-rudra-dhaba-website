@@ -5,21 +5,44 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { Button } from "@/components/ui/button";
 import { settingsQuery } from "@/lib/data";
-import { DHABA, VISIT_FAQS, MAPS_EMBED, MAPS_REVIEWS_URL, MAPS_URL, digitsOnly } from "@/lib/dhaba";
+import {
+  DHABA,
+  VISIT_FAQS,
+  MAPS_EMBED,
+  MAPS_REVIEWS_URL,
+  MAPS_URL,
+  SITE_URL,
+  digitsOnly,
+} from "@/lib/dhaba";
 
-const TITLE = "Visit Us – Shri Rudra Dhaba, NH-734 Bijnor";
+const TITLE = "Location, Hours & Directions – Shri Rudra Dhaba, Bijnor (Near Najibabad)";
 const DESC =
-  "Find Shri Rudra Murthal Walo Ka Dhaba on NH-734 near Bijnor: address, hours, map and directions.";
+  "Find Shri Rudra Murthal Walo Ka Dhaba on NH-734 near Bijnor & Najibabad: address, map, directions, opening hours 6 AM–11 PM daily.";
+
+const faqLd = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: VISIT_FAQS.map((f) => ({
+    "@type": "Question",
+    name: f.q,
+    acceptedAnswer: { "@type": "Answer", text: f.a },
+  })),
+};
 
 export const Route = createFileRoute("/visit")({
   head: () => ({
     meta: [
       { title: TITLE },
       { name: "description", content: DESC },
+      { name: "geo.region", content: "IN-UP" },
+      { name: "geo.placename", content: "Bijnor" },
+      { name: "geo.position", content: `${DHABA.lat};${DHABA.lng}` },
       { property: "og:title", content: TITLE },
       { property: "og:description", content: DESC },
+      { property: "og:url", content: `${SITE_URL}/visit` },
     ],
-    links: [{ rel: "canonical", href: "/visit" }],
+    links: [{ rel: "canonical", href: `${SITE_URL}/visit` }],
+    scripts: [{ type: "application/ld+json", children: JSON.stringify(faqLd) }],
   }),
   loader: ({ context }) => context.queryClient.ensureQueryData(settingsQuery),
   component: VisitPage,

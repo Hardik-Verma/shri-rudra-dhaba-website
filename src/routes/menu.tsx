@@ -9,11 +9,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { menuQuery, settingsQuery, type MenuItem } from "@/lib/data";
 import { useCart } from "@/lib/cart";
-import { DEFAULT_CATEGORIES, categoryMeta, describeItem, rupee } from "@/lib/dhaba";
+import { DEFAULT_CATEGORIES, SITE_URL, categoryMeta, describeItem, rupee } from "@/lib/dhaba";
 
-const TITLE = "Menu & Dine-In Order – Shri Rudra Dhaba";
+const TITLE = "Menu & Prices – Shri Rudra Dhaba, Bijnor | Order Dine-In on NH-734";
 const DESC =
-  "Browse the live Shri Rudra Dhaba menu and send a dine-in order from your table to the kitchen on WhatsApp.";
+  "See the live Shri Rudra Dhaba menu with prices — parathas, tandoor mains, Chinese, South Indian, chai & lassi near Bijnor & Najibabad. Order from your table on WhatsApp.";
 
 export const Route = createFileRoute("/menu")({
   head: () => ({
@@ -22,10 +22,11 @@ export const Route = createFileRoute("/menu")({
       { name: "description", content: DESC },
       { property: "og:title", content: TITLE },
       { property: "og:description", content: DESC },
+      { property: "og:url", content: `${SITE_URL}/menu` },
       { name: "twitter:title", content: TITLE },
       { name: "twitter:description", content: DESC },
     ],
-    links: [{ rel: "canonical", href: "/menu" }],
+    links: [{ rel: "canonical", href: `${SITE_URL}/menu` }],
   }),
   loader: ({ context }) =>
     Promise.all([

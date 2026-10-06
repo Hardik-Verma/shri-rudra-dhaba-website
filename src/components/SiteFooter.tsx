@@ -9,8 +9,8 @@ export function SiteFooter() {
         <div>
           <p className="text-xl font-bold">{DHABA.name}</p>
           <p className="mt-2 max-w-md text-sm text-muted-foreground">
-            Dine-in on NH-734 near Bijnor · {DHABA.rating} ★ on Google ({DHABA.reviewCount} reviews)
-            · {DHABA.hoursLabel}.
+            Restaurant on NH-734 near Bijnor &amp; Najibabad · {DHABA.rating} ★ on Google (
+            {DHABA.reviewCount} reviews) · {DHABA.hoursLabel}.
           </p>
         </div>
         <div className="text-sm">
@@ -45,7 +45,8 @@ export function SiteFooter() {
         </div>
       </div>
       <div className="border-t border-border px-4 py-4 text-center text-xs text-muted-foreground">
-        © 2025–{new Date().getFullYear()} {DHABA.shortName} · Dine-in only
+        © 2025–{new Date().getFullYear()} {DHABA.shortName} · Dine-in only · Serving Bijnor,
+        Najibabad &amp; the NH-734 corridor
       </div>
     </footer>
   );
