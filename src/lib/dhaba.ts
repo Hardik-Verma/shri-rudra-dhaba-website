@@ -23,7 +23,7 @@ export const DHABA = {
 
 // Canonical public URL of the site. If your Render URL differs, change it here
 // (sitemap, canonical tags and structured data all build on this).
-export const SITE_URL = "https://shri-rudra-dhaba.onrender.com";
+export const SITE_URL = "https://shrirudradhaba.in";
 
 export const MAPS_URL = `https://www.google.com/maps/dir/?api=1&destination=${DHABA.lat},${DHABA.lng}`;
 export const MAPS_EMBED = `https://www.google.com/maps?q=${DHABA.lat},${DHABA.lng}&z=15&output=embed`;
