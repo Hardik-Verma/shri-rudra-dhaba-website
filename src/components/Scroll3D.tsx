@@ -78,7 +78,7 @@ export function Hero3D({
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-        className="mx-auto flex min-h-[calc(640px-4rem)] w-full max-w-6xl flex-col justify-end px-4 pb-14 pt-14 text-hero-foreground sm:min-h-[calc(640px-5rem)] sm:px-6 lg:min-h-[calc(700px-5rem)] lg:px-8 lg:pb-20"
+        className="relative z-10 mx-auto flex min-h-[calc(640px-4rem)] w-full max-w-6xl flex-col justify-end px-4 pb-14 pt-14 text-hero-foreground sm:min-h-[calc(640px-5rem)] sm:px-6 lg:min-h-[calc(700px-5rem)] lg:px-8 lg:pb-20"
       >
         <motion.div style={{ y: textY }}>{children}</motion.div>
       </motion.div>

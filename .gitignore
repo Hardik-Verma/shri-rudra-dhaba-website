@@ -34,3 +34,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Accidental scaffold (openui-agent) — keep out of the repo
+openui-agent/

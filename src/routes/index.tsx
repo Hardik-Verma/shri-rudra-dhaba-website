@@ -112,8 +112,12 @@ function HomePage() {
               {DHABA.rating} on Google · {DHABA.reviewCount} reviews
             </a>
           </div>
-          <div className="mt-7 flex w-full max-w-md flex-col gap-3 sm:flex-row">
-            <Button asChild size="lg" className="flex-1 bg-white text-stone-900 hover:bg-white/90">
+          <div className="mt-7 flex w-full max-w-sm flex-col gap-3 sm:max-w-md sm:flex-row">
+            <Button
+              asChild
+              size="lg"
+              className="min-h-12 flex-1 bg-white text-stone-900 hover:bg-white/90 sm:min-h-11"
+            >
               <Link to="/menu">
                 <UtensilsCrossed />
                 View menu &amp; order
@@ -123,7 +127,7 @@ function HomePage() {
               asChild
               variant="outline"
               size="lg"
-              className="flex-1 border-white/50 bg-transparent text-white hover:bg-white/10 hover:text-white"
+              className="min-h-12 flex-1 border-white/50 bg-transparent text-white hover:bg-white/10 hover:text-white sm:min-h-11"
             >
               <a href={MAPS_URL} target="_blank" rel="noopener noreferrer">
                 <Navigation />
@@ -417,13 +421,13 @@ function HomePage() {
               )}
             </div>
             <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-              <Button asChild size="lg" className="flex-1">
+              <Button asChild size="lg" className="min-h-12 flex-1 sm:min-h-11">
                 <a href={MAPS_URL} target="_blank" rel="noopener noreferrer">
                   <Navigation />
                   Get directions
                 </a>
               </Button>
-              <Button asChild variant="outline" size="lg" className="flex-1">
+              <Button asChild variant="outline" size="lg" className="min-h-12 flex-1 sm:min-h-11">
                 <Link to="/visit">Hours, map &amp; FAQs</Link>
               </Button>
             </div>

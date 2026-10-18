@@ -113,7 +113,7 @@ function VisitPage() {
                 </p>
               )}
             </div>
-            <div className="mt-8 grid gap-3">
+            <div className="mt-8 grid gap-3 [&>a]:min-h-12 sm:[&>a]:min-h-11">
               <Button asChild size="lg">
                 <a href={MAPS_URL} target="_blank" rel="noopener noreferrer">
                   <Navigation /> Get directions

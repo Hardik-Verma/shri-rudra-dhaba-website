@@ -1,0 +1,45 @@
+name: Supabase Keep-Alive
+
+# Supabase pauses Free-plan projects after ~7 days of inactivity.
+# This pings a real PostgREST table read (site_settings, RLS: anyone can select)
+# every 3 days so the database counts as active. Setup:
+#   Repo -> Settings -> Secrets and variables -> Actions -> New repository secret
+#   SUPABASE_URL        = https://<ref>.supabase.co
+#   SUPABASE_PUBLISHABLE_KEY = sb_publishable_... (anon/publishable key only)
+# Trigger manually from the Actions tab via "Run workflow" to test.
+
+on:
+  schedule:
+    - cron: "17 3 */3 * *"
+  workflow_dispatch:
+
+concurrency:
+  group: supabase-keepalive
+  cancel-in-progress: false
+
+jobs:
+  ping:
+    name: Ping Supabase REST API
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Query site_settings (real DB activity)
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SUPABASE_URL:-}" ] || [ -z "${SUPABASE_PUBLISHABLE_KEY:-}" ]; then
+            echo "::error::Missing SUPABASE_URL or SUPABASE_PUBLISHABLE_KEY repo secret."
+            exit 1
+          fi
+          code=$(curl -sS -o /tmp/resp.json -w "%{http_code}" --max-time 30 \
+            -H "apikey: ${SUPABASE_PUBLISHABLE_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_PUBLISHABLE_KEY}" \
+            "${SUPABASE_URL}/rest/v1/site_settings?select=id&limit=1" || true)
+          echo "HTTP ${code}"
+          cat /tmp/resp.json || true
+          if [ "${code}" != "200" ]; then
+            echo "::error::Supabase ping failed (project paused or bad secrets?). Restore it in the dashboard."
+            exit 1
+          fi
