@@ -149,6 +149,27 @@ if (items.some((i) => i.name === "Sandwich" || i.name === "Cheese Grilled")) {
 }
 
 console.log(`Parsed ${items.length} items.`);
+
+// itemsOnly mode (OCR path): stray text must never become descriptions.
+const noisyPage = [
+  "",
+  "SNACKS",
+  "Enjoy our famous highway taste since 2025",
+  "POHA 149",
+  "Served hot with sev and a dash of lemon on top",
+  "ALOO PURI 149",
+  "",
+];
+const strict = parseMenuLines([noisyPage], { itemsOnly: true });
+if (strict.length !== 2) {
+  failures += 1;
+  console.error(`itemsOnly: expected 2 items, got ${strict.length}`);
+}
+if (strict.some((i) => i.description)) {
+  failures += 1;
+  console.error("itemsOnly: stray text leaked into descriptions");
+}
+
 if (failures === 0) {
   console.log("All checks passed.");
 } else {

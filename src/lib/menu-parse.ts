@@ -225,7 +225,16 @@ function isVeg(name: string, description: string | null): boolean {
   return !NON_VEG_RE.test(`${name} ${description ?? ""}`);
 }
 
-export function parseMenuLines(pages: string[][]): ParsedMenuItem[] {
+export type ParseOptions = {
+  /**
+   * Strict menu mode: emit only category/name/price rows and never attach
+   * stray text lines as descriptions. Used for OCR output, where random
+   * recognised fragments would otherwise pollute item cards.
+   */
+  itemsOnly?: boolean;
+};
+
+export function parseMenuLines(pages: string[][], options: ParseOptions = {}): ParsedMenuItem[] {
   const items: ParsedMenuItem[] = [];
   const seen = new Set<string>();
   let category = "Mains";
@@ -235,7 +244,7 @@ export function parseMenuLines(pages: string[][]): ParsedMenuItem[] {
   let pushedLastLine = false;
 
   const attachPending = () => {
-    if (pendingText && lastItem && !lastItem.description) {
+    if (pendingText && lastItem && !lastItem.description && !options.itemsOnly) {
       lastItem.description = pendingText.slice(0, 160);
     }
     pendingText = null;

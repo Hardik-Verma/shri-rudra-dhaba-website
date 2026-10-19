@@ -571,7 +571,7 @@ function Panel({ userId, email }: { userId: string; email: string }) {
         setParseStage("Organising items and prices…");
         // Let the UI paint the stage before the (fast) parse.
         await new Promise((r) => setTimeout(r, 30));
-        const ocrFound = parseMenuLines(ocrPages);
+        const ocrFound = parseMenuLines(ocrPages, { itemsOnly: true });
         if (ocrFound.length > found.length) found = ocrFound;
       } else {
         setParseStage("Organising items and prices…");
