@@ -20,6 +20,9 @@ dist-ssr
 .nitro
 *.local
 
+# Local OCR debug dumps (scripts/ocr-debug.ts)
+scripts/ocr-debug-out/
+
 # Wrangler / Cloudflare
 .wrangler/
 .dev.vars
@@ -34,3 +37,5 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+*.traineddata

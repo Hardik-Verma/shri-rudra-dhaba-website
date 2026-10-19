@@ -562,7 +562,10 @@ function Panel({ userId, email }: { userId: string; email: string }) {
     try {
       const { pages, chars } = await extractPdfText(file);
       let found = chars >= MIN_TEXT_CHARS ? parseMenuLines(pages) : [];
-      if (found.length < 5) {
+      // Weak text layers (scrambled, partial) can technically pass the char
+      // threshold yet still parse to almost nothing — OCR whenever the text
+      // path finds fewer than ~3 items per page.
+      if (found.length < Math.max(5, pages.length * 3)) {
         // Designed or scanned menus often have no usable text layer —
         // render each page and read it with on-device OCR instead.
         const ocrPages = await ocrPdfPages(file, (page, totalPage, status) =>

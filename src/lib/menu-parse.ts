@@ -58,11 +58,13 @@ export async function extractPdfLines(file: File): Promise<string[][]> {
       else rows.push({ y: w.y, words: [{ x: w.x, str: w.str }] });
     }
 
+    // A gap wider than ~15% of the page width means a second column — parse
+    // separately so "Paneer 180 | Chowmein 160" never becomes one fake item.
+    const pageWidth = page.getViewport({ scale: 1 }).width;
+    const colGap = Math.max(60, pageWidth * 0.15);
     const lines: string[] = [];
     for (const row of rows) {
       row.words.sort((a, b) => a.x - b.x);
-      // A gap wider than ~100 units means a second column — parse separately
-      // so "Paneer 180 | Chowmein 160" never becomes one fake item.
       let segment: string[] = [];
       let prevX: number | null = null;
       const flush = () => {
@@ -71,7 +73,7 @@ export async function extractPdfLines(file: File): Promise<string[][]> {
         segment = [];
       };
       for (const w of row.words) {
-        if (prevX !== null && w.x - prevX > 100) flush();
+        if (prevX !== null && w.x - prevX > colGap) flush();
         segment.push(w.str);
         prevX = w.x + w.str.length * 5;
       }
@@ -125,7 +127,7 @@ function findPrices(line: string): PriceHit[] {
   return hits;
 }
 
-const PRICE_ONLY_RE = /^(₹\s*|Rs\.?\s*)?(\d{1,4}(?:\.\d{1,2})?)(\s*\/-)?$/;
+const PRICE_ONLY_RE = /^[\s[({~<]*(₹\s*|Rs\.?\s*)?(\d{1,4}(?:\.\d{1,2})?)(\s*\/-)?[\s)\]}]*$/;
 
 const NON_VEG_RE =
   /\b(chicken|chiken|mutton|fish|egg|anda|keema|kheema|prawn|crab|meat|pork|non[-\s]?veg)\b/i;
@@ -133,7 +135,7 @@ const NON_VEG_RE =
 const JUNK_RES: RegExp[] = [
   /^[\d\s.,/()\-+₹]*$/i,
   /^page\s*\d+$/i,
-  /\b\d{10}\b|\+?91[\s-]?\d{5}[\s-]?\d{5}|\b\d{5}[\s-]\d{5,6}\b/i,
+  /\b\d{10}\b|\b\d{9,10}\b|\+?91[\s-]?\d{5}[\s-]?\d{5}|\b\d{5}[\s-]\d{5,6}\b/i,
   /call(\s+us)?\s*:?\s*[\d\s+\-()]{7,}/i,
   /gst|fssai|tax|subject to|all rights|thank|visit again/i,
   /timing|open|close|\bhours?\b|morning|evening/i,
@@ -141,6 +143,8 @@ const JUNK_RES: RegExp[] = [
   /wifi|parking|\ba ?\/ ?c\b|family (restaurant|dhaba)|since 20\d\d/i,
   /\bon m\.?r\.?p\.?\b/i,
   /^(menu|rate list|price list|menu card|pure veg|veg\.?|note:.*)$/i,
+  /taste from|murthal/i,
+  /terms (and )?condition|please give|feedback|forget our|served hot/i,
 ];
 
 const CATEGORY_KEYWORDS: Array<[RegExp, string]> = [
@@ -197,7 +201,7 @@ function detectCategory(line: string): string | null {
 
 function cleanName(raw: string): string {
   return raw
-    .replace(/^[•\-*>#([]*(\d{1,3}[.)\]]?\s*)?/, "")
+    .replace(/^[•\-*>#%~@<([]*(\d{1,3}[.)\]]?\s*)?/, "")
     .replace(/\.(\s*\.)+/g, " ")
     .replace(/\s+/g, " ")
     .replace(/(\w)\s*\(/g, "$1 (")
@@ -275,15 +279,17 @@ export function parseMenuLines(pages: string[][], options: ParseOptions = {}): P
       pushedLastLine = false;
 
       // Restaurant banner lines ("SHRI RUDRA DHABA") carry no prices — never items.
-      if (!/\d/.test(line) && /dhaba|restaurant|hotel|cafe|bhojnalaya|eatery/i.test(line)) {
+      if (!/\d/.test(line) && /rudra|dhaba|restaurant|hotel|cafe|bhojnalaya|eatery/i.test(line)) {
         attachPending();
         continue;
       }
 
       // Two-line layout ("Masala Dosa" / "190") beats junk filtering, but
-      // never treat a year (1900–2100) as a price here.
+      // never treat a year (1900–2100) as a price here. The pending name must
+      // contain a real word (≥3 letters) so OCR noise like "DY"/"ed en"
+      // never claims the following price.
       const priceOnly = PRICE_ONLY_RE.exec(line);
-      if (priceOnly && pendingText && pendingText.length >= 6) {
+      if (priceOnly && pendingText && /\b[a-zA-Z]{3,}\b/.test(pendingText)) {
         const value = Number(priceOnly[2] ?? "");
         const name = cleanName(pendingText);
         pendingText = null;
@@ -292,7 +298,9 @@ export function parseMenuLines(pages: string[][], options: ParseOptions = {}): P
           value >= 15 &&
           value <= MAX_PRICE &&
           (value < 1900 || value > 2100) &&
-          name.length >= 3
+          name.length >= 3 &&
+          name.length <= (options.itemsOnly ? 56 : 90) &&
+          !JUNK_RES.some((re) => re.test(name))
         ) {
           push({ category, name, description: null, price: value, is_veg: isVeg(name, null) });
         }
@@ -420,7 +428,11 @@ export function parseMenuLines(pages: string[][], options: ParseOptions = {}): P
           }
         }
         const name = cleanName(before);
-        if (name.length < 2 || name.length > 80) continue;
+        const maxName = options.itemsOnly ? 56 : 80;
+        const minPrice = options.itemsOnly ? 15 : MIN_PRICE;
+        if (name.length < 2 || name.length > maxName) continue;
+        if (hit.value < minPrice) continue;
+        if (JUNK_RES.some((re) => re.test(name))) continue;
         push({ category, name, description: null, price: hit.value, is_veg: isVeg(name, null) });
         continue;
       }
@@ -429,19 +441,30 @@ export function parseMenuLines(pages: string[][], options: ParseOptions = {}): P
 
       const header = detectCategory(line);
       if (header) {
-        // …unless the next line is a bare price — then this is a dish name
-        // in a two-line layout ("Masala Dosa" / "190"), not a header.
-        const next = (page[li + 1] ?? "").replace(/\s+/g, " ").trim();
-        const nextPrice = PRICE_ONLY_RE.exec(next);
-        const nextValue = Number(nextPrice?.[2] ?? "");
-        if (
-          nextPrice &&
-          line.length >= 4 &&
-          Number.isFinite(nextValue) &&
-          nextValue >= 15 &&
-          nextValue <= MAX_PRICE &&
-          (nextValue < 1900 || nextValue > 2100)
-        ) {
+        // …unless a bare price follows within a few lines — then this is a
+        // dish name in a two-line layout ("Masala Dosa" / "190"), not a
+        // header. Sparse OCR interleaves noise lines ("ed en", stray
+        // symbols) between the name and its price, so look through them.
+        let pairedPrice = false;
+        let checked = 0;
+        for (let j = li + 1; j < page.length && checked < 3; j += 1) {
+          const t = (page[j] ?? "").replace(/\s+/g, " ").trim();
+          if (!t) continue;
+          const nextPrice = PRICE_ONLY_RE.exec(t);
+          if (nextPrice) {
+            const nextValue = Number(nextPrice[2] ?? "");
+            pairedPrice =
+              Number.isFinite(nextValue) &&
+              nextValue >= 15 &&
+              nextValue <= MAX_PRICE &&
+              (nextValue < 1900 || nextValue > 2100);
+            break;
+          }
+          if (!/\b[a-zA-Z]{3,}\b/.test(t)) continue; // symbol noise
+          checked += 1;
+          break; // first real text line is not a price
+        }
+        if (pairedPrice && line.length >= 4) {
           if (pendingText) attachPending();
           pendingText = line;
           continue;
@@ -452,6 +475,10 @@ export function parseMenuLines(pages: string[][], options: ParseOptions = {}): P
       }
 
       if (/[a-zA-Z]/.test(line) && line.length >= 3 && line.length <= 90) {
+        // Sparse-mode OCR interleaves noise fragments ("ed en") between a
+        // name and its price line — ignore wordless noise and keep the
+        // pending name so "POHA" / "ed en" / "149" still pairs.
+        if (pendingText && !/\b[a-zA-Z]{3,}\b/.test(line)) continue;
         if (pendingText) attachPending(); // first line was a description
         pendingText = line;
       }

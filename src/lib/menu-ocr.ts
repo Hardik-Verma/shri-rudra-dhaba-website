@@ -4,13 +4,22 @@
  * Pipeline per page:
  *  1. Render at ~300 DPI (capped) with pdf.js.
  *  2. Preprocess: grayscale → contrast stretch → adaptive threshold, which
- *     isolates dark text from colourful gradient backgrounds.
+ *     isolates dark text from colourful gradient backgrounds (shared pure
+ *     functions in ocr-image.ts, also used by the Node debug harness).
  *  3. Read with tesseract.js. If the cleaned pass finds too few price lines,
  *     the page is retried from the softer grayscale-only render.
  *
  * Two tesseract workers run in parallel to halve wall-clock time. Everything
  * stays on this device — no upload, no API key, no AI service.
  */
+
+import {
+  adaptiveThreshold,
+  contrastStretch,
+  countPriceLines,
+  toGrayscale,
+  type RgbaImage,
+} from "./ocr-image";
 
 export type OcrProgress = (page: number, total: number, status: string) => void;
 
@@ -19,141 +28,25 @@ const WORKERS = 2;
 const MIN_PRICE_LINES = 3;
 
 // ---------------------------------------------------------------------------
-// Image preprocessing
+// Image helpers (browser canvas wrappers around the pure pipeline)
 // ---------------------------------------------------------------------------
-
-function toGrayscale(src: ImageData): ImageData {
-  const out = new ImageData(src.width, src.height);
-  const s = src.data;
-  const d = out.data;
-  for (let i = 0; i < s.length; i += 4) {
-    // Luma weighted for text contrast.
-    const r = s[i] ?? 0;
-    const g = s[i + 1] ?? 0;
-    const b = s[i + 2] ?? 0;
-    const y = (r * 299 + g * 587 + b * 114) / 1000;
-    d[i] = y;
-    d[i + 1] = y;
-    d[i + 2] = y;
-    d[i + 3] = 255;
-  }
-  return out;
-}
-
-/** Stretch the 2%–98% luminance range to 0–255 so faded prints reach full contrast. */
-function contrastStretch(img: ImageData): ImageData {
-  const hist = new Uint32Array(256);
-  const d = img.data;
-  for (let i = 0; i < d.length; i += 4) {
-    const v = d[i] ?? 0;
-    hist[v] = (hist[v] ?? 0) + 1;
-  }
-  const total = img.width * img.height;
-  let loSum = 0;
-  let hiSum = 0;
-  let lo = 0;
-  let hi = 255;
-  for (let v = 0; v < 256; v += 1) {
-    loSum += hist[v] ?? 0;
-    if (loSum >= total * 0.02) {
-      lo = v;
-      break;
-    }
-  }
-  for (let v = 255; v >= 0; v -= 1) {
-    hiSum += hist[v] ?? 0;
-    if (hiSum >= total * 0.02) {
-      hi = v;
-      break;
-    }
-  }
-  if (hi - lo < 40) return img;
-  const range = hi - lo;
-  const lut = new Uint8Array(256);
-  for (let v = 0; v < 256; v += 1) {
-    lut[v] = Math.max(0, Math.min(255, Math.round(((v - lo) * 255) / range)));
-  }
-  const out = new ImageData(img.width, img.height);
-  const o = out.data;
-  for (let i = 0; i < d.length; i += 4) {
-    const y = lut[d[i] ?? 0] ?? 0;
-    o[i] = y;
-    o[i + 1] = y;
-    o[i + 2] = y;
-    o[i + 3] = 255;
-  }
-  return out;
-}
-
-/**
- * Local-mean (adaptive) threshold via an integral image. A pixel becomes
- * text (0) when it is notably darker than its neighbourhood mean, which
- * survives gradient backgrounds far better than a single global cutoff.
- */
-function adaptiveThreshold(img: ImageData): ImageData {
-  const { width: w, height: h } = img;
-  const d = img.data;
-  // Integral image of luminance.
-  const integral = new Float64Array((w + 1) * (h + 1));
-  for (let y = 0; y < h; y += 1) {
-    let rowSum = 0;
-    for (let x = 0; x < w; x += 1) {
-      rowSum += d[(y * w + x) * 4] ?? 0;
-      integral[(y + 1) * (w + 1) + (x + 1)] = (integral[y * (w + 1) + (x + 1)] ?? 0) + rowSum;
-    }
-  }
-  const radius = Math.max(12, Math.min(40, Math.round(Math.min(w, h) / 30)));
-  const area = (2 * radius + 1) * (2 * radius + 1);
-  const bias = 14; // pixels darker than (mean - bias) are text
-  const out = new ImageData(w, h);
-  const o = out.data;
-  for (let y = 0; y < h; y += 1) {
-    const y0 = Math.max(0, y - radius);
-    const y1 = Math.min(h - 1, y + radius);
-    for (let x = 0; x < w; x += 1) {
-      const x0 = Math.max(0, x - radius);
-      const x1 = Math.min(w - 1, x + radius);
-      const sum =
-        (integral[(y1 + 1) * (w + 1) + (x1 + 1)] ?? 0) -
-        (integral[y0 * (w + 1) + (x1 + 1)] ?? 0) -
-        (integral[(y1 + 1) * (w + 1) + x0] ?? 0) +
-        (integral[y0 * (w + 1) + x0] ?? 0);
-      const mean = sum / area;
-      const v = d[(y * w + x) * 4] ?? 0;
-      const white = v > mean - bias ? 255 : 0;
-      const i = (y * w + x) * 4;
-      o[i] = white;
-      o[i + 1] = white;
-      o[i + 2] = white;
-      o[i + 3] = 255;
-    }
-  }
-  return out;
-}
 
 function prepareForOcr(canvas: HTMLCanvasElement, mode: "threshold" | "grayscale"): ImageData {
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Could not prepare this page for text recognition.");
   const raw = ctx.getImageData(0, 0, canvas.width, canvas.height);
   const gray = toGrayscale(raw);
-  if (mode === "grayscale") return contrastStretch(gray);
-  return adaptiveThreshold(contrastStretch(gray));
+  const cleaned =
+    mode === "grayscale" ? contrastStretch(gray) : adaptiveThreshold(contrastStretch(gray));
+  return new ImageData(new Uint8ClampedArray(cleaned.data), cleaned.width, cleaned.height);
 }
 
-function putImageDataOnto(canvas: HTMLCanvasElement, img: ImageData): void {
+function putImageDataOnto(canvas: HTMLCanvasElement, img: RgbaImage): void {
   canvas.width = img.width;
   canvas.height = img.height;
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Could not prepare this page for text recognition.");
-  ctx.putImageData(img, 0, 0);
-}
-
-function countPriceLines(text: string): number {
-  let n = 0;
-  for (const line of text.split("\n")) {
-    if (/\b\d{2,4}\b/.test(line)) n += 1;
-  }
-  return n;
+  ctx.putImageData(new ImageData(new Uint8ClampedArray(img.data), img.width, img.height), 0, 0);
 }
 
 // ---------------------------------------------------------------------------
@@ -189,8 +82,12 @@ async function loadDoc(file: File) {
 // ---------------------------------------------------------------------------
 
 async function createOcrWorker() {
-  const { createWorker } = await import("tesseract.js");
-  return createWorker("eng", 1);
+  const { PSM, createWorker } = await import("tesseract.js");
+  const worker = await createWorker("eng", 1);
+  // Sparse mode: designed two-column menus otherwise get merged into one
+  // combined line per row, pairing item names with the wrong prices.
+  await worker.setParameters({ tessedit_pageseg_mode: PSM.SPARSE_TEXT });
+  return worker;
 }
 
 type OcrWorker = Awaited<ReturnType<typeof createOcrWorker>>;
@@ -202,6 +99,8 @@ async function readPage(
   const rendered = await renderPageToCanvas(page);
 
   const work = document.createElement("canvas");
+  work.width = rendered.width;
+  work.height = rendered.height;
   putImageDataOnto(work, prepareForOcr(rendered, "threshold"));
   const first = await worker.recognize(work);
   const firstText = first.data.text ?? "";
