@@ -147,7 +147,7 @@ export const ABOUT_FAQS = [
   },
   {
     q: "Is the menu on this site up to date?",
-    a: "Yes — prices and availability are managed by the dhaba team, so what you see on the Menu page is what's cooking today.",
+    a: "Yes — the menu page is maintained directly by our kitchen team, so the dishes and prices you see reflect what is being served today.",
   },
   {
     q: "Do you serve families and groups?",

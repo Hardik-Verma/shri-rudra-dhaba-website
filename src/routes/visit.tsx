@@ -107,7 +107,7 @@ function VisitPage() {
               {phone && (
                 <p className="flex gap-3">
                   <Phone className="size-5 shrink-0 text-primary" />
-                  <a className="underline" href={`tel:+91${phone.slice(-10)}`}>
+                  <a className="link-underline font-medium" href={`tel:+91${phone.slice(-10)}`}>
                     +91 {phone.slice(-10)}
                   </a>
                 </p>

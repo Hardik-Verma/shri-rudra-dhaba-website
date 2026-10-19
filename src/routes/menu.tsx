@@ -90,12 +90,12 @@ function MenuPage() {
                 <h1 className="text-4xl sm:text-5xl">Menu &amp; Order</h1>
                 <p className="mt-3 max-w-2xl text-muted-foreground">
                   {items.length > 0
-                    ? `${items.length} dishes live now. Choose your dishes, add your table number, and send the order to the kitchen.`
+                    ? `${items.length} dishes available today. Choose your dishes, add your table number, and send the order to the kitchen.`
                     : "Choose your dishes, add your table number, and send the order to the kitchen."}
                 </p>
               </div>
               <p className="max-w-md border-l-2 border-primary pl-4 text-sm text-muted-foreground">
-                Prices and availability are managed by the dhaba team.
+                All prices in ₹. Dishes are subject to daily availability.
               </p>
             </div>
             <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">

@@ -39,8 +39,8 @@ function GalleryPage() {
             <h1 className="mt-3 text-4xl sm:text-5xl">Food &amp; the halt</h1>
             <p className="mt-3 max-w-2xl text-muted-foreground">
               {gallery.length > 0
-                ? `${gallery.length} photos from the dhaba — managed by the owner.`
-                : "Fresh photos are on the way. The owner can add them anytime from the Admin Panel."}
+                ? `${gallery.length} photographs from our kitchen and dining area.`
+                : "New photographs are being prepared and will be published shortly."}
             </p>
           </div>
         </section>

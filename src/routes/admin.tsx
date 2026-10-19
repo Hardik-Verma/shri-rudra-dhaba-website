@@ -10,7 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { menuQuery, settingsQuery, galleryQuery } from "@/lib/data";
-import { countTextChars, extractPdfLines, parseMenuLines } from "@/lib/menu-parse";
+import { MIN_TEXT_CHARS, countTextChars, extractPdfLines, parseMenuLines } from "@/lib/menu-parse";
+import { ocrPdfPages } from "@/lib/menu-ocr";
 import { StaffSection } from "@/components/StaffSection";
 import { rupee } from "@/lib/dhaba";
 import type { MenuItem } from "@/lib/data";
@@ -560,17 +561,26 @@ function Panel({ userId, email }: { userId: string; email: string }) {
     setParseStage("Reading text from PDF…");
     try {
       const { pages, chars } = await extractPdfText(file);
-      if (chars < 80) {
-        throw new Error(
-          "This PDF has no readable text — it looks like a scanned photo. Export it as a searchable PDF and try again.",
+      let found = chars >= MIN_TEXT_CHARS ? parseMenuLines(pages) : [];
+      if (found.length < 5) {
+        // Designed or scanned menus often have no usable text layer —
+        // render each page and read it with on-device OCR instead.
+        const ocrPages = await ocrPdfPages(file, (page, totalPage, status) =>
+          setParseStage(`Page ${page} of ${totalPage}: ${status}…`),
         );
+        setParseStage("Organising items and prices…");
+        // Let the UI paint the stage before the (fast) parse.
+        await new Promise((r) => setTimeout(r, 30));
+        const ocrFound = parseMenuLines(ocrPages);
+        if (ocrFound.length > found.length) found = ocrFound;
+      } else {
+        setParseStage("Organising items and prices…");
+        await new Promise((r) => setTimeout(r, 30));
       }
-      setParseStage("Organising items and prices…");
-      // Let the UI paint the stage before the (fast) parse.
-      await new Promise((r) => setTimeout(r, 30));
-      const found = parseMenuLines(pages);
       if (found.length === 0) {
-        throw new Error("Could not find any dishes with prices in this PDF.");
+        throw new Error(
+          "Could not find any dishes with prices in this PDF. Try a clearer export, or add the items manually below.",
+        );
       }
       setDraft(found.map((i) => ({ ...i, image_url: null as string | null })));
       toast.success(`Found ${found.length} items — review and publish.`);

@@ -144,8 +144,8 @@ function HomePage() {
               [`Since ${DHABA.since}`, "Highway halt on NH-734"],
               ["7 days", "6 AM – 11 PM, every day"],
               [
-                `${liveItems.length > 0 ? liveItems.length : "Live"} dishes`,
-                "Menu managed by the dhaba team",
+                `${liveItems.length > 0 ? `${liveItems.length} dishes` : "Full menu"}`,
+                "Fresh dishes, served daily",
               ],
             ].map(([value, label], i) => (
               <Reveal3D key={label}>
@@ -227,7 +227,7 @@ function HomePage() {
               <div className="flex flex-wrap items-end justify-between gap-4">
                 <div>
                   <Eyebrow>Popular right now</Eyebrow>
-                  <h2 className="mt-3 text-3xl sm:text-4xl">From the live menu</h2>
+                  <h2 className="mt-3 text-3xl sm:text-4xl">From today&apos;s menu</h2>
                 </div>
                 <Link to="/menu" className="link-underline text-sm font-semibold text-primary">
                   Full menu &amp; order

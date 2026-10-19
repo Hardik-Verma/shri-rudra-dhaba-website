@@ -90,7 +90,24 @@ type PriceHit = { value: number; start: number; end: number };
 
 const PRICE_RE = /(₹\s*|Rs\.?\s*|INR\s*)?(\d{1,4}(?:\.\d{1,2})?)(\s*\/-|\s*-)?/g;
 
+// Trailing dual prices as printed on designed menus: "Chilli Paneer Dry/Gravy 289/299".
+const SLASH_DUAL_PRICE_RE = /(\d{3,4})\s*\/\s*(\d{3,4})\s*$/;
+
 function findPrices(line: string): PriceHit[] {
+  const dual = SLASH_DUAL_PRICE_RE.exec(line);
+  if (dual) {
+    const aStr = dual[1] ?? "";
+    const bStr = dual[2] ?? "";
+    const a = Number(aStr);
+    const b = Number(bStr);
+    if (a >= MIN_PRICE && b >= MIN_PRICE && a <= MAX_PRICE && b <= MAX_PRICE) {
+      const secondStart = dual.index + dual[0].lastIndexOf(bStr);
+      return [
+        { value: a, start: dual.index, end: dual.index + aStr.length },
+        { value: b, start: secondStart, end: dual.index + dual[0].length },
+      ];
+    }
+  }
   const hits: PriceHit[] = [];
   PRICE_RE.lastIndex = 0;
   let m: RegExpExecArray | null;
@@ -122,6 +139,7 @@ const JUNK_RES: RegExp[] = [
   /timing|open|close|\bhours?\b|morning|evening/i,
   /address|bijnor|akbarabad|begampur|nh[-\s]?\d+|highway/i,
   /wifi|parking|\ba ?\/ ?c\b|family (restaurant|dhaba)|since 20\d\d/i,
+  /\bon m\.?r\.?p\.?\b/i,
   /^(menu|rate list|price list|menu card|pure veg|veg\.?|note:.*)$/i,
 ];
 
@@ -136,7 +154,7 @@ const CATEGORY_KEYWORDS: Array<[RegExp, string]> = [
     /\b(snacks?|starters?|pakora|pakode|fries|chaat|kebab|rolls?|burger|sandwich|pav bhaji|chole bhature|samosa|tikki|cutlet)\b/i,
     "Snacks",
   ],
-  [/\b(chai|tea|coffee|lassi|beverages?|shakes?|juice|cold drinks?)\b/i, "Chai & Lassi"],
+  [/\b(chai|tea|coffee|lassi|beverages?|shakes?|juice|cold drinks?|relax time)\b/i, "Chai & Lassi"],
   [
     /\b(main course|curries|paneer|dal|kofta|shahi|kadhai|mix veg|chana|rajma|egg curry|mushroom|malai|butter masala)\b/i,
     "Tandoor Main Course",
@@ -150,9 +168,8 @@ const ALL_CAPS_HEADER_RE = /^[A-Z][A-Z\s&'/-]{2,38}$/;
 function toTitleCase(s: string): string {
   return s
     .toLowerCase()
-    .split(/(\s+)/)
-    .map((w) => (/^[a-z]/.test(w) ? w.charAt(0).toUpperCase() + w.slice(1) : w))
-    .join("")
+    .replace(/(^|[\s(/-])([a-z])/g, (_m, prefix: string, ch: string) => prefix + ch.toUpperCase())
+    .replace(/\s+/g, " ")
     .trim();
 }
 
@@ -183,6 +200,7 @@ function cleanName(raw: string): string {
     .replace(/^[•\-*>#([]*(\d{1,3}[.)\]]?\s*)?/, "")
     .replace(/\.(\s*\.)+/g, " ")
     .replace(/\s+/g, " ")
+    .replace(/(\w)\s*\(/g, "$1 (")
     .replace(/\b\d+\s*(pcs?|pieces?)\b\s*$/i, "")
     .replace(/[:\-–—.,\s]+$/, "")
     .trim();
@@ -213,6 +231,8 @@ export function parseMenuLines(pages: string[][]): ParsedMenuItem[] {
   let category = "Mains";
   let lastItem: ParsedMenuItem | null = null;
   let pendingText: string | null = null;
+  let sawBlank = true;
+  let pushedLastLine = false;
 
   const attachPending = () => {
     if (pendingText && lastItem && !lastItem.description) {
@@ -223,18 +243,27 @@ export function parseMenuLines(pages: string[][]): ParsedMenuItem[] {
 
   const push = (item: ParsedMenuItem) => {
     if (items.length >= MAX_ITEMS) return;
+    item.name = toTitleCase(item.name);
     const key = `${item.category}|${item.name.toLowerCase()}|${item.price}`;
     if (seen.has(key)) return;
     seen.add(key);
     items.push(item);
     lastItem = item;
+    pushedLastLine = true;
   };
 
   for (const page of pages) {
     for (let li = 0; li < page.length; li += 1) {
       const rawLine = page[li] ?? "";
       const line = rawLine.replace(/\s+/g, " ").trim();
-      if (!line) continue;
+      if (!line) {
+        sawBlank = true;
+        continue;
+      }
+      const blankBefore = sawBlank;
+      const createdPrevLine = pushedLastLine;
+      sawBlank = false;
+      pushedLastLine = false;
 
       // Restaurant banner lines ("SHRI RUDRA DHABA") carry no prices — never items.
       if (!/\d/.test(line) && /dhaba|restaurant|hotel|cafe|bhojnalaya|eatery/i.test(line)) {
@@ -266,6 +295,30 @@ export function parseMenuLines(pages: string[][]): ParsedMenuItem[] {
         continue;
       }
 
+      // Designed menus wrap long names onto the next line without a price
+      // ("CHEESE GRILLED 159" / "SANDWICH"). A short single-word line that
+      // directly follows an item line continues that item's name.
+      // (lastItem is only assigned inside push(); assert for control flow.)
+      const prevItem = lastItem as ParsedMenuItem | null;
+      if (
+        !blankBefore &&
+        createdPrevLine &&
+        prevItem &&
+        !prevItem.description &&
+        !/\d/.test(line) &&
+        /^[A-Za-z][A-Za-z\s.'&/-]{1,30}$/.test(line) &&
+        line.split(/\s+/).length === 1 &&
+        !/[:\-–—.]$/.test(line) &&
+        !new RegExp(`\\b${line.toLowerCase()}\\b`).test(prevItem.name.toLowerCase())
+      ) {
+        const merged = cleanName(`${prevItem.name} ${line}`);
+        if (merged.length <= 60) {
+          prevItem.name = toTitleCase(merged);
+          prevItem.is_veg = isVeg(prevItem.name, prevItem.description);
+          continue;
+        }
+      }
+
       const prices = findPrices(line);
 
       if (prices.length >= 2) {
@@ -274,9 +327,33 @@ export function parseMenuLines(pages: string[][]): ParsedMenuItem[] {
         const first = prices[0];
         const second = prices[1];
         if (!first || !second) continue;
-        const { base, firstLabel, secondLabel } = splitVariantName(
-          cleanName(line.slice(0, first.start)),
-        );
+        const rawName = cleanName(line.slice(0, first.start));
+        // "Chilli Paneer Dry/Gravy 289/299" → side labels instead of Half/Full.
+        const slashName = /^(.{3,}?)\s+([A-Za-z]{2,10})\/([A-Za-z]{2,10})$/.exec(rawName);
+        if (slashName) {
+          const baseName = toTitleCase(slashName[1] ?? "");
+          const label1 = toTitleCase(slashName[2] ?? "");
+          const label2 = toTitleCase(slashName[3] ?? "");
+          if (baseName.length >= 3) {
+            const veg = isVeg(baseName, null);
+            push({
+              category,
+              name: `${baseName} (${label1})`,
+              description: null,
+              price: first.value,
+              is_veg: veg,
+            });
+            push({
+              category,
+              name: `${baseName} (${label2})`,
+              description: null,
+              price: second.value,
+              is_veg: veg,
+            });
+            continue;
+          }
+        }
+        const { base, firstLabel, secondLabel } = splitVariantName(rawName);
         if (base.length < 2) continue;
         const veg = isVeg(base, null);
         push({
